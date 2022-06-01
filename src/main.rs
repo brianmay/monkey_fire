@@ -182,6 +182,7 @@ fn movable_system(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn player_fire_hit_enemy_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
@@ -229,6 +230,7 @@ fn player_fire_hit_enemy_system(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn enemy_fire_hit_player_system(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,

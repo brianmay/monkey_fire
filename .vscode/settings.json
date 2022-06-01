@@ -2,8 +2,11 @@
     "cSpell.words": [
         "aabb",
         "Color",
+        "consts",
         "despawn",
         "despawned",
+        "egui",
+        "Inspectable",
         "ninjacat",
         "Plugins",
         "RESPAWN",

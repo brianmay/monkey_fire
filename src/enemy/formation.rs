@@ -24,9 +24,9 @@ impl FormationMaker {
             &self.current_template,
             self.current_members >= FORMATION_MEMBERS_MAX,
         ) {
-            (Some(tmpl), false) => {
+            (Some(template), false) => {
                 self.current_members += 1;
-                tmpl.clone()
+                template.clone()
             }
             (None, _) | (_, true) => {
                 let mut rng = thread_rng();
