@@ -95,7 +95,7 @@ fn player_fire_system(
                     texture_atlas: game_textures.fire.clone(),
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
-                        scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.0),
+                        scale: Vec3::new(1.0, 1.0, 1.0),
                         ..Default::default()
                     },
                     ..Default::default()
