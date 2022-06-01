@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide};
+use bevy_inspector_egui::WorldInspectorPlugin;
 use components::{
     Animate, Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, Fire, FromEnemy, FromPlayer,
     Movable, Player, SpriteSize, Velocity,
@@ -99,6 +100,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(player::PlayerPlugin)
         .add_plugin(enemy::EnemyPlugin)
         .add_startup_system(setup_system)

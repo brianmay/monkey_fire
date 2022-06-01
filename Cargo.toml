@@ -9,3 +9,4 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 bevy = "0.7"
 rand = "0.8"
+bevy-inspector-egui = "0.11.0"
