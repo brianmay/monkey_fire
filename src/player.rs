@@ -18,7 +18,12 @@ impl Plugin for PlayerPlugin {
             )
             .add_system(player_keyboard_event_system)
             .add_system(player_fire_system)
-            .add_system(player_animate);
+            .add_system(
+                player_animate
+                    .after(player_spawn_system)
+                    .after(player_keyboard_event_system)
+                    .after(player_fire_system),
+            );
     }
 }
 
@@ -38,7 +43,7 @@ fn player_spawn_system(
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: game_textures.player.clone(),
                 sprite: TextureAtlasSprite {
-                    index: 4,
+                    index: 6,
                     ..Default::default()
                 },
                 transform: Transform {
@@ -53,7 +58,11 @@ fn player_spawn_system(
             .insert(Movable {
                 auto_despawn: false,
             })
-            .insert(Velocity { x: 0.0, y: 0.0 });
+            .insert(Velocity { x: 0.0, y: 0.0 })
+            .insert(Animate {
+                range: 6..=6,
+                ..Default::default()
+            });
 
         player_state.spawned();
     }
@@ -65,13 +74,17 @@ fn player_keyboard_event_system(
     mut query: Query<(&mut Velocity, &mut Transform), With<Player>>,
 ) {
     if let Ok((mut velocity, mut transform)) = query.get_single_mut() {
-        (state.direction, state.state, velocity.x) = if kb.pressed(KeyCode::Left) {
+        let (direction, animation, velocity_x) = if kb.pressed(KeyCode::Left) {
             (FaceDirection::Left, PlayerAnimation::Walking, -1.0)
         } else if kb.pressed(KeyCode::Right) {
             (FaceDirection::Right, PlayerAnimation::Walking, 1.0)
         } else {
             (state.direction, PlayerAnimation::Idle, 0.0)
         };
+
+        state.direction = direction;
+        state.state = animation;
+        velocity.x = velocity_x;
 
         transform.scale.x = match state.direction {
             FaceDirection::Left => -1.0 * SPRITE_SCALE,
@@ -82,6 +95,7 @@ fn player_keyboard_event_system(
 
 fn player_fire_system(
     mut commands: Commands,
+    mut state: ResMut<PlayerState>,
     kb: Res<Input<KeyCode>>,
     game_textures: Res<GameTextures>,
     query: Query<&Transform, With<Player>>,
@@ -106,25 +120,26 @@ fn player_fire_system(
                 .insert(Velocity { x: 0.0, y: 1.0 })
                 .insert(Movable { auto_despawn: true })
                 .insert(Animate {
-                    length: 3,
+                    range: 0..=2,
                     ..Default::default()
                 });
+
+            state.state = PlayerAnimation::Firing;
         }
     }
 }
 
-fn player_animate(
-    time: Res<Time>,
-    mut state: ResMut<PlayerState>,
-    mut query: Query<&mut TextureAtlasSprite, With<Player>>,
-) {
-    for mut sprite in query.iter_mut() {
-        state.timer.tick(time.delta());
-        if state.timer.finished() {
-            sprite.index = match state.state {
-                PlayerAnimation::Idle => 4,
-                PlayerAnimation::Walking => (sprite.index + 1) % 4,
-            }
+fn player_animate(state: ResMut<PlayerState>, mut query: Query<&mut Animate, With<Player>>) {
+    let (range_to_finish, range) = match state.state {
+        PlayerAnimation::Idle => (None, 6..=6),
+        PlayerAnimation::Walking => (None, 0..=3),
+        PlayerAnimation::Firing => (Some(4..=5), 6..=6),
+    };
+    println!("{:?}", state.state);
+    for mut animate in query.iter_mut() {
+        if animate.range_to_finish.is_none() && range_to_finish.is_some() {
+            animate.range_to_finish = range_to_finish.clone();
         }
+        animate.range = range.clone();
     }
 }

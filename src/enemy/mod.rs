@@ -55,7 +55,7 @@ fn enemy_spawn_system(
             .insert(formation)
             .insert(SpriteSize::from(ENEMY_SIZE))
             .insert(Animate {
-                length: 8,
+                range: 0..=7,
                 ..Default::default()
             });
 
@@ -95,7 +95,7 @@ fn enemy_fire_system(
             .insert(Movable { auto_despawn: true })
             .insert(Velocity { x: 0.0, y: -1.0 })
             .insert(Animate {
-                length: 3,
+                range: 0..=2,
                 ..Default::default()
             });
     }

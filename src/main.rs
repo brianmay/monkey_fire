@@ -50,22 +50,24 @@ struct GameTextures {
 
 struct EnemyCount(u32);
 
+#[derive(Debug)]
 pub enum PlayerAnimation {
     Idle,
     Walking,
+    Firing,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum FaceDirection {
     Left,
     Right,
 }
 
+#[derive(Debug)]
 struct PlayerState {
     on: bool,
     last_shot: f64, // -1 if not shot
     pub state: PlayerAnimation,
-    pub timer: Timer,
     pub direction: FaceDirection,
 }
 
@@ -75,7 +77,6 @@ impl Default for PlayerState {
             on: false,
             last_shot: -1.0,
             state: PlayerAnimation::Idle,
-            timer: Timer::from_seconds(0.2, true),
             direction: FaceDirection::Left,
         }
     }
@@ -144,22 +145,15 @@ fn setup_system(
     commands.insert_resource(win_size);
 
     let texture_handle = asset_server.load(PLAYER_SHEET);
-    let texture_atlas = TextureAtlas::from_grid(
-        texture_handle,
-        Vec2::new(PLAYER_SIZE.0, PLAYER_SIZE.1),
-        5,
-        1,
-    );
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(140.0, 168.0), 7, 1);
     let player = texture_atlases.add(texture_atlas);
 
     let texture_handle = asset_server.load(ENEMY_SHEET);
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(ENEMY_SIZE.0, ENEMY_SIZE.1), 8, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(256.0, 222.0), 8, 1);
     let enemy = texture_atlases.add(texture_atlas);
 
     let texture_handle = asset_server.load(FIRE_SHEET);
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(FIRE_SIZE.0, FIRE_SIZE.1), 3, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(70.0, 70.0), 3, 1);
     let fire = texture_atlases.add(texture_atlas);
 
     let texture_handle = asset_server.load(EXPLOSION_SHEET);
@@ -366,7 +360,19 @@ fn animate_system(time: Res<Time>, mut query: Query<(&mut Animate, &mut TextureA
     for (mut animate, mut sprite) in query.iter_mut() {
         animate.timer.tick(time.delta());
         if animate.timer.finished() {
-            sprite.index = (sprite.index + 1) % animate.length;
+            let range = if let Some(range_to_finish) = &animate.range_to_finish {
+                range_to_finish
+            } else {
+                &animate.range
+            };
+            sprite.index = sprite.index.saturating_add(1);
+            if sprite.index < *range.start() {
+                sprite.index = *range.start();
+            }
+            if sprite.index > *range.end() {
+                sprite.index = *range.start();
+                animate.range_to_finish = None;
+            }
         }
     }
 }
