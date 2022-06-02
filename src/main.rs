@@ -1,6 +1,11 @@
 use std::collections::HashSet;
 
-use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    math::Vec3Swizzles,
+    prelude::*,
+    sprite::collide_aabb::collide,
+};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use components::{
     Animate, Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, Fire, FromEnemy, FromPlayer,
@@ -90,6 +95,11 @@ impl PlayerState {
     }
 }
 
+#[derive(Default)]
+struct Scoreboard {
+    pub score: u32,
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.3, 0.3, 0.3)))
@@ -99,7 +109,10 @@ fn main() {
             height: 720.0,
             ..Default::default()
         })
+        .insert_resource(Scoreboard::default())
         .add_plugins(DefaultPlugins)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(player::PlayerPlugin)
         .add_plugin(enemy::EnemyPlugin)
@@ -109,7 +122,8 @@ fn main() {
         .add_system(enemy_fire_hit_player_system)
         .add_system(explosion_to_spawn_system)
         .add_system(explosion_animation_system)
-        .add_system(animate)
+        .add_system(animate_system)
+        .add_system(scoreboard_system)
         .run();
 }
 
@@ -160,6 +174,41 @@ fn setup_system(
     };
     commands.insert_resource(game_textures);
     commands.insert_resource(EnemyCount(0));
+
+    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(TextBundle {
+        text: Text {
+            sections: vec![
+                TextSection {
+                    value: "Score: ".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.5, 0.5, 1.0),
+                    },
+                },
+                TextSection {
+                    value: "".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(1.0, 0.5, 0.5),
+                    },
+                },
+            ],
+            ..Default::default()
+        },
+        style: Style {
+            position_type: PositionType::Absolute,
+            position: Rect {
+                top: Val::Px(5.0),
+                left: Val::Px(5.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 }
 
 fn movable_system(
@@ -188,6 +237,7 @@ fn movable_system(
 fn player_fire_hit_enemy_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
+    mut scoreboard: ResMut<Scoreboard>,
     fire_query: Query<(Entity, &Transform, &SpriteSize), (With<Fire>, With<FromPlayer>)>,
     enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
 ) {
@@ -224,6 +274,8 @@ fn player_fire_hit_enemy_system(
                 commands.entity(fire_entity).despawn();
                 despawned_entities.insert(fire_entity);
 
+                scoreboard.score = scoreboard.score.saturating_add(1);
+
                 commands
                     .spawn()
                     .insert(ExplosionToSpawn(enemy_tf.translation));
@@ -236,6 +288,7 @@ fn player_fire_hit_enemy_system(
 fn enemy_fire_hit_player_system(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
+    mut scoreboard: ResMut<Scoreboard>,
     time: Res<Time>,
     fire_query: Query<(Entity, &Transform, &SpriteSize), (With<Fire>, With<FromEnemy>)>,
     player_query: Query<(Entity, &Transform, &SpriteSize), With<Player>>,
@@ -258,6 +311,8 @@ fn enemy_fire_hit_player_system(
                 player_state.shot(time.seconds_since_startup());
 
                 commands.entity(fire_entity).despawn();
+
+                scoreboard.score = scoreboard.score.saturating_sub(1);
 
                 commands
                     .spawn()
@@ -307,11 +362,17 @@ fn explosion_animation_system(
     }
 }
 
-fn animate(time: Res<Time>, mut query: Query<(&mut Animate, &mut TextureAtlasSprite)>) {
+fn animate_system(time: Res<Time>, mut query: Query<(&mut Animate, &mut TextureAtlasSprite)>) {
     for (mut animate, mut sprite) in query.iter_mut() {
         animate.timer.tick(time.delta());
         if animate.timer.finished() {
             sprite.index = (sprite.index + 1) % animate.length;
         }
+    }
+}
+
+fn scoreboard_system(scoreboard: Res<Scoreboard>, mut query: Query<&mut Text>) {
+    for mut text in query.iter_mut() {
+        text.sections[1].value = scoreboard.score.to_string();
     }
 }

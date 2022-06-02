@@ -6,9 +6,11 @@
         "despawn",
         "despawned",
         "egui",
+        "Fira",
         "Inspectable",
         "ninjacat",
         "Plugins",
+        "Rect",
         "RESPAWN",
         "Swizzles",
         "Timestep"
