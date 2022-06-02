@@ -1,9 +1,10 @@
 use bevy::{core::FixedTimestep, prelude::*};
 
 use crate::{
-    components::{Animate, Fire, FromPlayer, Movable, Player, SpriteSize, Velocity},
-    FaceDirection, GameTextures, PlayerAnimation, PlayerState, WinSize, FIRE_SIZE,
-    PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
+    components::{
+        Animate, Fire, FromPlayer, Movable, OnOutsideWindow, Player, SpriteSize, Velocity,
+    },
+    GameTextures, PlayerState, WinSize, FIRE_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
 };
 
 pub struct PlayerPlugin;
@@ -11,6 +12,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerState::default())
+            .insert_resource(PlayerSprite::default())
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(FixedTimestep::step(0.5))
@@ -21,9 +23,35 @@ impl Plugin for PlayerPlugin {
             .add_system(
                 player_animate
                     .after(player_spawn_system)
-                    .after(player_keyboard_event_system)
-                    .after(player_fire_system),
+                    .after(player_keyboard_event_system),
             );
+    }
+}
+
+#[derive(Debug)]
+pub enum PlayerAnimation {
+    Idle,
+    Walking,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum PlayerDirection {
+    Left,
+    Right,
+}
+
+#[derive(Debug)]
+struct PlayerSprite {
+    pub state: PlayerAnimation,
+    pub direction: PlayerDirection,
+}
+
+impl Default for PlayerSprite {
+    fn default() -> Self {
+        Self {
+            state: PlayerAnimation::Idle,
+            direction: PlayerDirection::Left,
+        }
     }
 }
 
@@ -56,7 +84,7 @@ fn player_spawn_system(
             .insert(Player)
             .insert(SpriteSize::from(PLAYER_SIZE))
             .insert(Movable {
-                auto_despawn: false,
+                on_outside_window: OnOutsideWindow::Wrap,
             })
             .insert(Velocity { x: 0.0, y: 0.0 })
             .insert(Animate {
@@ -70,25 +98,25 @@ fn player_spawn_system(
 
 fn player_keyboard_event_system(
     kb: Res<Input<KeyCode>>,
-    mut state: ResMut<PlayerState>,
+    mut sprite: ResMut<PlayerSprite>,
     mut query: Query<(&mut Velocity, &mut Transform), With<Player>>,
 ) {
     if let Ok((mut velocity, mut transform)) = query.get_single_mut() {
         let (direction, animation, velocity_x) = if kb.pressed(KeyCode::Left) {
-            (FaceDirection::Left, PlayerAnimation::Walking, -1.0)
+            (PlayerDirection::Left, PlayerAnimation::Walking, -1.0)
         } else if kb.pressed(KeyCode::Right) {
-            (FaceDirection::Right, PlayerAnimation::Walking, 1.0)
+            (PlayerDirection::Right, PlayerAnimation::Walking, 1.0)
         } else {
-            (state.direction, PlayerAnimation::Idle, 0.0)
+            (sprite.direction, PlayerAnimation::Idle, 0.0)
         };
 
-        state.direction = direction;
-        state.state = animation;
+        sprite.direction = direction;
+        sprite.state = animation;
         velocity.x = velocity_x;
 
-        transform.scale.x = match state.direction {
-            FaceDirection::Left => -1.0 * SPRITE_SCALE,
-            FaceDirection::Right => 1.0 * SPRITE_SCALE,
+        transform.scale.x = match sprite.direction {
+            PlayerDirection::Left => -1.0 * SPRITE_SCALE,
+            PlayerDirection::Right => 1.0 * SPRITE_SCALE,
         }
     }
 }
@@ -117,7 +145,9 @@ fn player_fire_system(
                 .insert(FromPlayer)
                 .insert(SpriteSize::from(FIRE_SIZE))
                 .insert(Velocity { x: 0.0, y: 1.0 })
-                .insert(Movable { auto_despawn: true })
+                .insert(Movable {
+                    on_outside_window: OnOutsideWindow::Despawn,
+                })
                 .insert(Animate {
                     range: 0..=2,
                     ..Default::default()
@@ -126,12 +156,12 @@ fn player_fire_system(
     }
 }
 
-fn player_animate(state: ResMut<PlayerState>, mut query: Query<&mut Animate, With<Player>>) {
-    let range = match state.state {
+fn player_animate(sprite: Res<PlayerSprite>, mut query: Query<&mut Animate, With<Player>>) {
+    let range = match sprite.state {
         PlayerAnimation::Idle => 6..=6,
         PlayerAnimation::Walking => 0..=3,
     };
-    for mut animate in query.iter_mut() {
-        animate.range = range.clone();
+    if let Ok(mut animate) = query.get_single_mut() {
+        animate.range = range;
     }
 }

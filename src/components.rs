@@ -24,9 +24,14 @@ impl From<(f32, f32)> for SpriteSize {
     }
 }
 
+pub enum OnOutsideWindow {
+    Despawn,
+    Wrap,
+}
+
 #[derive(Component)]
 pub struct Movable {
-    pub auto_despawn: bool,
+    pub on_outside_window: OnOutsideWindow,
 }
 
 #[derive(Component)]

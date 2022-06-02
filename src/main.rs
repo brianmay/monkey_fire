@@ -12,6 +12,8 @@ use components::{
     Movable, Player, SpriteSize, Velocity,
 };
 
+use crate::components::OnOutsideWindow;
+
 mod components;
 mod enemy;
 mod player;
@@ -51,23 +53,9 @@ struct GameTextures {
 struct EnemyCount(u32);
 
 #[derive(Debug)]
-pub enum PlayerAnimation {
-    Idle,
-    Walking,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum FaceDirection {
-    Left,
-    Right,
-}
-
-#[derive(Debug)]
 struct PlayerState {
     on: bool,
     last_shot: f64, // -1 if not shot
-    pub state: PlayerAnimation,
-    pub direction: FaceDirection,
 }
 
 impl Default for PlayerState {
@@ -75,8 +63,6 @@ impl Default for PlayerState {
         Self {
             on: false,
             last_shot: -1.0,
-            state: PlayerAnimation::Idle,
-            direction: FaceDirection::Left,
         }
     }
 }
@@ -85,13 +71,11 @@ impl PlayerState {
     pub fn shot(&mut self, time: f64) {
         self.on = false;
         self.last_shot = time;
-        self.state = PlayerAnimation::Idle;
     }
 
     pub fn spawned(&mut self) {
         self.on = true;
         self.last_shot = -1.0;
-        self.state = PlayerAnimation::Idle;
     }
 }
 
@@ -213,14 +197,34 @@ fn movable_system(
         transform.translation.x += velocity.x * TIME_STEP * BASE_SPEED;
         transform.translation.y += velocity.y * TIME_STEP * BASE_SPEED;
 
-        if movable.auto_despawn {
-            const MARGIN: f32 = 200.0;
-            if transform.translation.x < -win_size.width / 2.0 - MARGIN
-                || transform.translation.x > win_size.width / 2.0 + MARGIN
-                || transform.translation.y < -win_size.height / 2.0 - MARGIN
-                || transform.translation.y > win_size.height / 2.0 + MARGIN
-            {
-                commands.entity(entity).despawn();
+        const MARGIN: f32 = 50.0;
+        let left = -win_size.width / 2.0 - MARGIN;
+        let right = win_size.width / 2.0 + MARGIN;
+        let top = win_size.height / 2.0 + MARGIN;
+        let bottom = -win_size.height / 2.0 - MARGIN;
+
+        let left_of_screen = transform.translation.x < left;
+        let right_of_screen = transform.translation.x > right;
+        let top_of_screen = transform.translation.y < -win_size.height / 2.0 - MARGIN;
+        let bottom_of_screen = transform.translation.y > win_size.height / 2.0 + MARGIN;
+
+        match movable.on_outside_window {
+            OnOutsideWindow::Despawn => {
+                if left_of_screen | right_of_screen | top_of_screen | bottom_of_screen {
+                    commands.entity(entity).despawn();
+                }
+            }
+            OnOutsideWindow::Wrap => {
+                if left_of_screen {
+                    transform.translation.x = right;
+                } else if right_of_screen {
+                    transform.translation.x = left;
+                }
+                if top_of_screen {
+                    transform.translation.y = bottom;
+                } else if bottom_of_screen {
+                    transform.translation.y = top;
+                }
             }
         }
     }

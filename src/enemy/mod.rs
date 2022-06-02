@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use crate::{
-    components::{Animate, Enemy, Fire, FromEnemy, Movable, SpriteSize, Velocity},
+    components::{Animate, Enemy, Fire, FromEnemy, Movable, OnOutsideWindow, SpriteSize, Velocity},
     EnemyCount, GameTextures, WinSize, ENEMY_MAX, ENEMY_SIZE, FIRE_SIZE, SPRITE_SCALE, TIME_STEP,
 };
 use bevy::{core::FixedTimestep, ecs::schedule::ShouldRun, prelude::*};
@@ -92,7 +92,9 @@ fn enemy_fire_system(
             .insert(Fire)
             .insert(FromEnemy)
             .insert(SpriteSize::from(FIRE_SIZE))
-            .insert(Movable { auto_despawn: true })
+            .insert(Movable {
+                on_outside_window: OnOutsideWindow::Despawn,
+            })
             .insert(Velocity { x: 0.0, y: -1.0 })
             .insert(Animate {
                 range: 0..=2,
