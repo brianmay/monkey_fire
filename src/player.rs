@@ -131,7 +131,6 @@ fn player_animate(state: ResMut<PlayerState>, mut query: Query<&mut Animate, Wit
         PlayerAnimation::Idle => 6..=6,
         PlayerAnimation::Walking => 0..=3,
     };
-    println!("{:?}", state.state);
     for mut animate in query.iter_mut() {
         animate.range = range.clone();
     }
