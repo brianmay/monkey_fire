@@ -54,7 +54,6 @@ struct EnemyCount(u32);
 pub enum PlayerAnimation {
     Idle,
     Walking,
-    Firing,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -360,18 +359,13 @@ fn animate_system(time: Res<Time>, mut query: Query<(&mut Animate, &mut TextureA
     for (mut animate, mut sprite) in query.iter_mut() {
         animate.timer.tick(time.delta());
         if animate.timer.finished() {
-            let range = if let Some(range_to_finish) = &animate.range_to_finish {
-                range_to_finish
-            } else {
-                &animate.range
-            };
+            let range = &animate.range;
             sprite.index = sprite.index.saturating_add(1);
             if sprite.index < *range.start() {
                 sprite.index = *range.start();
             }
             if sprite.index > *range.end() {
                 sprite.index = *range.start();
-                animate.range_to_finish = None;
             }
         }
     }

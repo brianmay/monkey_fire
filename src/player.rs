@@ -95,7 +95,6 @@ fn player_keyboard_event_system(
 
 fn player_fire_system(
     mut commands: Commands,
-    mut state: ResMut<PlayerState>,
     kb: Res<Input<KeyCode>>,
     game_textures: Res<GameTextures>,
     query: Query<&Transform, With<Player>>,
@@ -123,23 +122,17 @@ fn player_fire_system(
                     range: 0..=2,
                     ..Default::default()
                 });
-
-            state.state = PlayerAnimation::Firing;
         }
     }
 }
 
 fn player_animate(state: ResMut<PlayerState>, mut query: Query<&mut Animate, With<Player>>) {
-    let (range_to_finish, range) = match state.state {
-        PlayerAnimation::Idle => (None, 6..=6),
-        PlayerAnimation::Walking => (None, 0..=3),
-        PlayerAnimation::Firing => (Some(4..=5), 6..=6),
+    let range = match state.state {
+        PlayerAnimation::Idle => 6..=6,
+        PlayerAnimation::Walking => 0..=3,
     };
     println!("{:?}", state.state);
     for mut animate in query.iter_mut() {
-        if animate.range_to_finish.is_none() && range_to_finish.is_some() {
-            animate.range_to_finish = range_to_finish.clone();
-        }
         animate.range = range.clone();
     }
 }

@@ -58,7 +58,6 @@ impl Default for ExplosionTimer {
 
 #[derive(Component)]
 pub struct Animate {
-    pub range_to_finish: Option<RangeInclusive<usize>>,
     pub range: RangeInclusive<usize>,
     pub timer: Timer,
 }
@@ -66,7 +65,6 @@ pub struct Animate {
 impl Default for Animate {
     fn default() -> Self {
         Self {
-            range_to_finish: None,
             range: 0..=0,
             timer: Timer::from_seconds(0.5, true),
         }
