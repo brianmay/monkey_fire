@@ -2,7 +2,8 @@ use std::f32::consts::PI;
 
 use crate::{
     components::{Animate, Enemy, Fire, FromEnemy, Movable, OnOutsideWindow, SpriteSize, Velocity},
-    EnemyCount, GameTextures, WinSize, ENEMY_MAX, ENEMY_SIZE, FIRE_SIZE, SPRITE_SCALE, TIME_STEP,
+    EnemyCount, GameTextures, WinSize, ENEMY_FIRE_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE,
+    TIME_STEP,
 };
 use bevy::{core::FixedTimestep, ecs::schedule::ShouldRun, prelude::*};
 use rand::{thread_rng, Rng};
@@ -64,7 +65,7 @@ fn enemy_spawn_system(
 }
 
 fn enemy_fire_criteria() -> ShouldRun {
-    if thread_rng().gen_bool(1.0 / 60.0) {
+    if thread_rng().gen_bool(1.0 / 120.0) {
         ShouldRun::Yes
     } else {
         ShouldRun::No
@@ -81,7 +82,7 @@ fn enemy_fire_system(
 
         commands
             .spawn_bundle(SpriteSheetBundle {
-                texture_atlas: game_textures.fire.clone(),
+                texture_atlas: game_textures.enemy_fire.clone(),
                 transform: Transform {
                     translation: Vec3::new(x, y, 10.0),
                     scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.0),
@@ -91,13 +92,13 @@ fn enemy_fire_system(
             })
             .insert(Fire)
             .insert(FromEnemy)
-            .insert(SpriteSize::from(FIRE_SIZE))
+            .insert(SpriteSize::from(ENEMY_FIRE_SIZE))
             .insert(Movable {
                 on_outside_window: OnOutsideWindow::Despawn,
             })
             .insert(Velocity { x: 0.0, y: -1.0 })
             .insert(Animate {
-                range: 0..=2,
+                range: 0..=1,
                 ..Default::default()
             });
     }

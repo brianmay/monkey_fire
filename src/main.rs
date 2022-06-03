@@ -21,11 +21,14 @@ mod player;
 const PLAYER_SHEET: &str = "monkey.png";
 const PLAYER_SIZE: (f32, f32) = (140.0, 168.0);
 
+const PLAYER_FIRE_SHEET: &str = "sun.png";
+const PLAYER_FIRE_SIZE: (f32, f32) = (70.0, 70.0);
+
 const ENEMY_SHEET: &str = "ninja_cat.png";
 const ENEMY_SIZE: (f32, f32) = (256.0, 222.0);
 
-const FIRE_SHEET: &str = "sun.png";
-const FIRE_SIZE: (f32, f32) = (70.0, 70.0);
+const ENEMY_FIRE_SHEET: &str = "penguin.png";
+const ENEMY_FIRE_SIZE: (f32, f32) = (72.0, 64.0);
 
 const EXPLOSION_SHEET: &str = "nuclear_explosion.png";
 const EXPLOSION_LEN: usize = 10;
@@ -45,8 +48,9 @@ pub struct WinSize {
 
 struct GameTextures {
     player: Handle<TextureAtlas>,
-    fire: Handle<TextureAtlas>,
+    player_fire: Handle<TextureAtlas>,
     enemy: Handle<TextureAtlas>,
+    enemy_fire: Handle<TextureAtlas>,
     explosion: Handle<TextureAtlas>,
 }
 
@@ -131,13 +135,17 @@ fn setup_system(
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(140.0, 168.0), 7, 1);
     let player = texture_atlases.add(texture_atlas);
 
+    let texture_handle = asset_server.load(PLAYER_FIRE_SHEET);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(70.0, 70.0), 3, 1);
+    let player_fire = texture_atlases.add(texture_atlas);
+
     let texture_handle = asset_server.load(ENEMY_SHEET);
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(256.0, 222.0), 8, 1);
     let enemy = texture_atlases.add(texture_atlas);
 
-    let texture_handle = asset_server.load(FIRE_SHEET);
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(70.0, 70.0), 3, 1);
-    let fire = texture_atlases.add(texture_atlas);
+    let texture_handle = asset_server.load(ENEMY_FIRE_SHEET);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(72.0, 64.0), 2, 1);
+    let enemy_fire = texture_atlases.add(texture_atlas);
 
     let texture_handle = asset_server.load(EXPLOSION_SHEET);
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(256.0, 256.0), 10, 1);
@@ -145,8 +153,9 @@ fn setup_system(
 
     let game_textures = GameTextures {
         player,
-        fire,
+        player_fire,
         enemy,
+        enemy_fire,
         explosion,
     };
     commands.insert_resource(game_textures);

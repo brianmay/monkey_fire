@@ -4,7 +4,8 @@ use crate::{
     components::{
         Animate, Fire, FromPlayer, Movable, OnOutsideWindow, Player, SpriteSize, Velocity,
     },
-    GameTextures, PlayerState, WinSize, FIRE_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
+    GameTextures, PlayerState, WinSize, PLAYER_FIRE_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE,
+    SPRITE_SCALE,
 };
 
 pub struct PlayerPlugin;
@@ -133,17 +134,17 @@ fn player_fire_system(
 
             commands
                 .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: game_textures.fire.clone(),
+                    texture_atlas: game_textures.player_fire.clone(),
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
-                        scale: Vec3::new(1.0, 1.0, 1.0),
+                        scale: Vec3::new(SPRITE_SCALE * 2.0, SPRITE_SCALE * 2.0, 1.0),
                         ..Default::default()
                     },
                     ..Default::default()
                 })
                 .insert(Fire)
                 .insert(FromPlayer)
-                .insert(SpriteSize::from(FIRE_SIZE))
+                .insert(SpriteSize::from(PLAYER_FIRE_SIZE))
                 .insert(Velocity { x: 0.0, y: 1.0 })
                 .insert(Movable {
                     on_outside_window: OnOutsideWindow::Despawn,
