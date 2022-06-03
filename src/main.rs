@@ -107,6 +107,7 @@ fn main() {
         .add_startup_system(setup_system)
         .add_system(movable_system)
         .add_system(player_fire_hit_enemy_system)
+        .add_system(player_fire_hit_enemy_fire_system)
         .add_system(enemy_fire_hit_player_system)
         .add_system(explosion_to_spawn_system)
         .add_system(explosion_animation_system)
@@ -281,6 +282,49 @@ fn player_fire_hit_enemy_system(
                 despawned_entities.insert(fire_entity);
 
                 scoreboard.score = scoreboard.score.saturating_add(1);
+
+                commands
+                    .spawn()
+                    .insert(ExplosionToSpawn(enemy_tf.translation));
+            }
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+fn player_fire_hit_enemy_fire_system(
+    mut commands: Commands,
+    fire_query: Query<(Entity, &Transform, &SpriteSize), (With<Fire>, With<FromPlayer>)>,
+    enemy_query: Query<(Entity, &Transform, &SpriteSize), (With<Fire>, With<FromEnemy>)>,
+) {
+    let mut despawned_entities: HashSet<Entity> = HashSet::new();
+
+    for (fire_entity, fire_tf, fire_size) in fire_query.iter() {
+        if despawned_entities.contains(&fire_entity) {
+            continue;
+        }
+
+        let fire_scale = fire_tf.scale.xy().abs();
+
+        for (enemy_entity, enemy_tf, enemy_size) in enemy_query.iter() {
+            if despawned_entities.contains(&enemy_entity)
+                || despawned_entities.contains(&fire_entity)
+            {
+                continue;
+            }
+
+            let enemy_scale = enemy_tf.scale.xy().abs();
+
+            let collision = collide(
+                fire_tf.translation,
+                fire_size.0 * fire_scale,
+                enemy_tf.translation,
+                enemy_size.0 * enemy_scale,
+            );
+
+            if collision.is_some() {
+                commands.entity(enemy_entity).despawn();
+                despawned_entities.insert(enemy_entity);
 
                 commands
                     .spawn()
